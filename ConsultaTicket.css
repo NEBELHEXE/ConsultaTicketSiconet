@@ -49,6 +49,9 @@ body {
   margin: 0;
 }
 
+html::select {
+  color: darkgray;
+
 /* Header */
 .header {
   display: flex;
@@ -163,4 +166,5 @@ tbody tr:hover {
   color: white;
   cursor: pointer;
 }
+
 
