@@ -51,6 +51,7 @@ body {
 
 html::select {
   color: darkgray;
+}
 
 /* Header */
 .header {
@@ -166,5 +167,6 @@ tbody tr:hover {
   color: white;
   cursor: pointer;
 }
+
 
 
