@@ -1,115 +1,122 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tickets Siconet</title>
-    <link rel="stylesheet" href="ConsultaTicket.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tickets Siconet</title>
+  <link rel="stylesheet" href="tablesurveysiconet.css">
 
 </head>
 <body>
-    <!-- Header con logo -->
-    <div class="header">
-        <a target="_blank" href="https://ticketsiconet.netlify.app/">
-            <img src="https://siconet.com.mx/wp-content/uploads/2016/12/transparente_2-01.png" alt="Siconet Logo">
-        </a>
+  <!-- Header con logo -->
+  <div class="header">
+    <a target="_blank" href="https://ticketsiconet.netlify.app/">
+      <img src="https://siconet.com.mx/wp-content/uploads/2016/12/transparente_2-01.png" alt="Siconet Logo">
+    </a>
+  </div>
+
+  <main>
+    <!-- Overlay de carga -->
+    <div id="loading-overlay">
+      <div class="spinner"></div>
+      <div>Cargando datos, por favor espera...</div>
     </div>
 
-    <main>
-        <!-- Overlay de carga -->
-        <div id="loading-overlay">
-            <div class="spinner"></div>
-            <div>Cargando datos, por favor espera...</div>
-        </div>
+    <!-- Búsqueda por ID -->
+    <div id="search-container">
+      <input type="text" id="search-id" placeholder="Ingrese ID a buscar...">
+      <button id="search-btn">Buscar</button>
+      <div id="no-results">No se encontró ningún ticket.</div>
+    </div>
 
-        <!-- Búsqueda por ID -->
-        <div id="search-container">
-            <input type="text" id="search-id" placeholder="Ingrese ID a buscar...">
-            <button id="search-btn">Buscar</button>
-        </div>
+    <!-- Tabla de tickets -->
+    <table id="tickets-table">
+      <thead>
+        <tr>
+          <th>Empresa</th>
+          <th>Fecha</th>
+          <th>ID</th>
+          <th>Urgencia</th>
+          <th>Descripción</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </main>
 
-        <!-- Tabla de tickets -->
-        <table id="tickets-table">
-            <thead>
-                <tr>
-                    <th>Empresa</th>
-                    <th>Fecha</th>
-                    <th>ID</th>
-                    <th>Urgencia</th>
-                    <th>Descripción</th>
-                    <th>Estado</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </main>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const overlay = document.getElementById('loading-overlay');
+      const tableBody = document.querySelector('#tickets-table tbody');
+      const searchInput = document.getElementById('search-id');
+      const searchBtn = document.getElementById('search-btn');
+      const table = document.getElementById('tickets-table');
+      const noResults = document.getElementById('no-results');
 
-    <script>
-        window.addEventListener('DOMContentLoaded', () => {
-            const overlay = document.getElementById('loading-overlay');
-            const tableBody = document.querySelector('#tickets-table tbody');
-            const searchInput = document.getElementById('search-id');
-            const searchBtn = document.getElementById('search-btn');
-            const table = document.getElementById('tickets-table');
+      overlay.style.display = 'flex';
+      let ticketsData = [];
 
-            overlay.style.display = 'flex';
-            let ticketsData = [];
+      fetch('https://script.google.com/macros/s/AKfycbxAwQsVPhC-xJgiytGNxdKIyBdiqNMH9T8ji8LvIESwKOw-q4qWsNyj2Fg_hPOVM5nT/exec')
+        .then(res => res.json())
+        .then(data => {
+          ticketsData = data.map(ticket => {
+            const fechaRaw = ticket.Fecha || ticket.fecha || '';
+            const fechaTicket = fechaRaw ? new Date(fechaRaw) : null;
+            return {
+              empresa: ticket.Empresa || ticket.empresa || '',
+              fecha: fechaTicket,
+              id: ticket.ID || ticket.id || '',
+              urgencia: ticket.Urgencia || ticket.urgencia || '',
+              descripcion: ticket.Descripcion || ticket.descripcion || ''
+            };
+          });
+        })
+        .catch(err => console.error(err))
+        .finally(() => overlay.style.display = 'none');
 
-            fetch('https://script.google.com/macros/s/AKfycbxAwQsVPhC-xJgiytGNxdKIyBdiqNMH9T8ji8LvIESwKOw-q4qWsNyj2Fg_hPOVM5nT/exec')
-                .then(res => res.json())
-                .then(data => {
-                    ticketsData = data.map(ticket => {
-                        const fechaRaw = ticket.Fecha || ticket.fecha || '';
-                        const fechaTicket = fechaRaw ? new Date(fechaRaw) : null;
-                        return {
-                            empresa: ticket.Empresa || ticket.empresa || '',
-                            fecha: fechaTicket,
-                            id: ticket.ID || ticket.id || '',
-                            urgencia: ticket.Urgencia || ticket.urgencia || '',
-                            descripcion: ticket.Descripcion || ticket.descripcion || ''
-                        };
-                    });
-                })
-                .catch(err => console.error(err))
-                .finally(() => overlay.style.display = 'none');
+      function renderTable(data) {
+        tableBody.innerHTML = '';
+        const hoy = new Date();
 
-            function renderTable(data) {
-                tableBody.innerHTML = '';
-                const hoy = new Date();
+        if (data.length > 0) {
+          table.style.display = 'table';
+          noResults.style.display = 'none';
+        } else {
+          table.style.display = 'none';
+          noResults.style.display = 'block';
+        }
 
-                if (data.length > 0) table.style.display = 'table';
-                else table.style.display = 'none';
+        data.forEach(ticket => {
+          let estado = '🫡';
+          if (ticket.fecha) {
+            const diffDias = Math.floor((hoy - ticket.fecha) / (1000*60*60*24));
+            if (diffDias <= 1) estado = '🫡';
+            else if (diffDias <= 3) estado = '😐';
+            else if (diffDias <= 7) estado = '☹️';
+            else estado = '💀';
+          }
 
-                data.forEach(ticket => {
-                    let estado = '🫡';
-                    if (ticket.fecha) {
-                        const diffDias = Math.floor((hoy - ticket.fecha) / (1000 * 60 * 60 * 24));
-                        if (diffDias <= 1) estado = '🫡';
-                        else if (diffDias <= 3) estado = '😐';
-                        else if (diffDias <= 7) estado = '☹️';
-                        else estado = '💀';
-                    }
-
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                <td>${ticket.empresa}</td>
-                <td>${ticket.fecha ? ticket.fecha.toLocaleDateString() : ''}</td>
-                <td>${ticket.id}</td>
-                <td>${ticket.urgencia}</td>
-                <td>${ticket.descripcion}</td>
-                <td>${estado}</td>
-              `;
-                    tableBody.appendChild(tr);
-                });
-            }
-
-            // Buscar al presionar el botón
-            searchBtn.addEventListener('click', () => {
-                const query = searchInput.value.trim().toLowerCase();
-                const filtered = ticketsData.filter(ticket => ticket.id.toLowerCase().includes(query));
-                renderTable(filtered);
-            });
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${ticket.empresa}</td>
+            <td>${ticket.fecha ? ticket.fecha.toLocaleDateString() : ''}</td>
+            <td>${ticket.id}</td>
+            <td>${ticket.urgencia}</td>
+            <td>${ticket.descripcion}</td>
+            <td>${estado}</td>
+          `;
+          tableBody.appendChild(tr);
         });
-    </script>
+      }
+
+      // Buscar al presionar el botón
+      searchBtn.addEventListener('click', () => {
+        const query = searchInput.value.trim().toLowerCase();
+        const filtered = ticketsData.filter(ticket => ticket.id.toLowerCase().includes(query));
+        renderTable(filtered);
+      });
+    });
+  </script>
 </body>
 </html>
